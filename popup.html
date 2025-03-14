@@ -1,10 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <title>Website Restrictor</title>
   <link rel="stylesheet" type="text/css" href="styles.css">
 </head>
 <body>
-  <h1>Website Restrictor</h1>
-  <p>This extension notifies you if you are on a restricted website.</p>
+  <div class="container">
+    <h1>Website Restrictor</h1>
+    <p>Manage your restricted websites below:</p>
+
+    <div class="add-site-section">
+      <h2>Add New Site</h2>
+      <input type="text" id="newSiteInput" placeholder="e.g., youtube.com">
+      <button id="addSiteButton">Add Site</button>
+    </div>
+
+    <div class="restricted-sites-section">
+      <h2>Current Restricted Sites</h2>
+      <ul id="sitesList"></ul>
+    </div>
+  </div>
+  <script src="popup.js"></script>
 </body>
 </html>

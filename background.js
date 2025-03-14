@@ -1,20 +1,32 @@
 console.log('Background script loaded and running');
 
+let restrictedSites = [];
+
+// Initialize restricted sites from storage or file
+async function initializeRestrictedSites() {
+  try {
+    // First try to get from storage
+    const storage = await chrome.storage.local.get(['restrictedSites']);
+    if (storage.restrictedSites) {
+      restrictedSites = storage.restrictedSites;
+    } else {
+      // If not in storage, load from file
+      const response = await fetch(chrome.runtime.getURL('restricted_sites.json'));
+      const data = await response.json();
+      restrictedSites = data.sites;
+      // Save to storage
+      await chrome.storage.local.set({ restrictedSites: data.sites });
+    }
+    console.log('Initialized restricted sites:', restrictedSites);
+  } catch (error) {
+    console.error('Error initializing restricted sites:', error);
+  }
+}
+
 // Function to check if a URL matches any restricted patterns
 async function checkRestrictedUrl(url) {
   try {
-    const response = await fetch(chrome.runtime.getURL('restricted_sites.json'));
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const restrictedSites = await response.json();
-    
-    if (!Array.isArray(restrictedSites.sites)) {
-      console.error('restricted_sites.json should contain an array under "sites" key');
-      return false;
-    }
-
-    return restrictedSites.sites.some(pattern => {
+    return restrictedSites.some(pattern => {
       try {
         const regex = new RegExp(pattern, 'i');
         const matches = regex.test(url);
@@ -49,9 +61,16 @@ function showNotification(url) {
   });
 }
 
+// Listen for messages from popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'updateRestrictedSites') {
+    restrictedSites = message.sites;
+    console.log('Updated restricted sites:', restrictedSites);
+  }
+});
+
 // Listen for tab updates
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  // Only check when the page has finished loading
   if (changeInfo.status === 'complete' && tab.url && /^https?:\/\//.test(tab.url)) {
     console.log('Checking URL:', tab.url);
     
@@ -81,3 +100,6 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
     console.error('Error handling tab activation:', error);
   }
 });
+
+// Initialize the restricted sites when the background script loads
+initializeRestrictedSites();
